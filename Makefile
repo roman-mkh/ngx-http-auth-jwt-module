@@ -7,6 +7,7 @@ NC    := \033[0m
 
 DOCKER_ORG_NAME = teslagov
 DOCKER_IMAGE_NAME = jwt-nginx
+HOST_NGINX_PORT = 8080
 
 .PHONY: all
 all:
@@ -35,9 +36,15 @@ rebuild-nginx:
 stop-nginx:
 	docker stop $(shell docker inspect --format="{{.Id}}" "$(DOCKER_IMAGE_NAME)-cont") ||:
 
+
+.PHONY: start1-nginx
+start1-nginx:
+	docker run --rm --name "$(DOCKER_IMAGE_NAME)-cont" -d -p 172.31.24.55:8000:8000 $(DOCKER_ORG_NAME)/$(DOCKER_IMAGE_NAME)
+
+
 .PHONY: start-nginx
 start-nginx:
-	docker run --rm --name "$(DOCKER_IMAGE_NAME)-cont" -d -p 8000:8000 $(DOCKER_ORG_NAME)/$(DOCKER_IMAGE_NAME)
+	docker run --rm --name "$(DOCKER_IMAGE_NAME)-cont" -d -p ${HOST_NGINX_PORT}:8000 $(DOCKER_ORG_NAME)/$(DOCKER_IMAGE_NAME)
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/lib64/nginx/modules/ngx_http_auth_jwt_module.so .
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/local/lib/libjansson.so.4.13.0 .
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/local/lib/libjwt.a .
@@ -45,6 +52,11 @@ start-nginx:
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/local/lib/libjwt.so.0.7.0 .
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/local/lib/pkgconfig/jansson.pc .
 	docker cp $(DOCKER_IMAGE_NAME)-cont:/usr/local/lib/pkgconfig/libjwt.pc .
+
+.PHONY: starti-nginx
+starti-nginx:
+	docker run --rm -it --name "$(DOCKER_IMAGE_NAME)-cont"  -p ${HOST_NGINX_PORT}:8000 $(DOCKER_ORG_NAME)/$(DOCKER_IMAGE_NAME)
+
 
 .PHONY: build-test-runner
 build-test-runner:
@@ -56,4 +68,4 @@ rebuild-test-runner:
 
 .PHONY: test
 test:
-	docker run --rm $(DOCKER_ORG_NAME)/jwt-nginx-test-runner
+	docker run --rm --add-host host.docker.internal:host-gateway $(DOCKER_ORG_NAME)/jwt-nginx-test-runner

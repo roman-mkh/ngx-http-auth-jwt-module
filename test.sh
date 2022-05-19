@@ -3,6 +3,7 @@
 RED='\033[01;31m'
 GREEN='\033[01;32m'
 NONE='\033[00m'
+HOST_NGINX_PORT=8080
 
 test_jwt () {
   local name=$1
@@ -10,7 +11,7 @@ test_jwt () {
   local expect=$3
   local extra=$4
 
-  cmd="curl -X GET -o /dev/null --silent --head --write-out '%{http_code}' http://host.docker.internal:8000$path -H 'cache-control: no-cache' $extra"
+  cmd="curl -X GET -o /dev/null --silent --head --write-out '%{http_code}' http://host.docker.internal:${HOST_NGINX_PORT}$path -H 'cache-control: no-cache' $extra"
 
   test=$( eval ${cmd} )
   if [ "$test" -eq "$expect" ];then
@@ -50,6 +51,8 @@ main() {
   test_jwt "Secure test rsa256 from file with valid jwt" "/secure-rs256-file/" "200" "--header \"Authorization: Bearer ${VALID_RS256_JWT}\""
 
   test_jwt "Secure test rsa256 from file with invalid jwt" "/secure-rs256-file/" "401" "--header \"Authorization: Bearer ${INVALID_RSA256_JWT}\""
+
+  test_jwt "Secure test with missing required jwt claims" "/req-claim-value-secure-no-redirect/" "401" "--header \"Authorization: Bearer ${VALIDJWT}\""
 }
 
 main "$@"
